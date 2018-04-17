@@ -12,15 +12,19 @@ import Analyser from './Analyser';
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
+  'Song': 'City Escape',
   'Load Song': loadScene, // A function pointer, essentially
   'Play/Pause': PlayPause,
   'Volume': 50,
 };
 
+let starttime: number = new Date().getTime();
+
 let audioCtx: AudioContext;
 let audioSrc: AudioBufferSourceNode;
 let audioBuf: AudioBuffer;
 let analyser: AnalyserNode;
+let delay: DelayNode;
 let gain: GainNode;
 
 let generator: Analyser;
@@ -30,10 +34,13 @@ let started: boolean = false;
 let lastVol = 50;
 
 let square: Square;
-let beats: vec3[];
 let currBeats: number[];
 
 function loadScene() {
+  if (playing) {
+    audioCtx.suspend();
+  }
+
   playing = false;
   started = false;
   let dims = vec2.fromValues(document.documentElement.clientWidth, document.documentElement.clientHeight);
@@ -46,7 +53,8 @@ function loadScene() {
   gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
 
   let request = new XMLHttpRequest();
-  request.open('GET', '../../Audio/City Escape.mp3', true);
+  request.open('GET', '../../Audio/' + controls.Song + '.mp3');
+  console.log(controls.Song);
   request.responseType = 'arraybuffer';
 
   request.onload = function() {
@@ -63,18 +71,20 @@ function loadScene() {
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
 
+  delay = audioCtx.createDelay(6); // Gives the analyzer time to create the map
+  delay.delayTime.value = 6;
+
   // Set up node network
   audioSrc.connect(analyser);
-  analyser.connect(gain);
+  analyser.connect(delay);
+  delay.connect(gain);
   gain.connect(audioCtx.destination);
 
   generator = new Analyser(analyser, dims);
-  generator.generateBeat();
+  generator.generateBeat(0);
   currBeats = generator.getBeats()
-  //console.log(currBeats);
-  //audioSrc.playbackRate.value = 0.5;
-
 }
+
 
 function PlayPause() {
   if (!started) {
@@ -93,7 +103,6 @@ function PlayPause() {
     }
   }
   console.log(playing);
-  console.log(currBeats);
 }
 
 function main() {
@@ -109,6 +118,7 @@ function main() {
   // Add controls to the gui
   const gui = new DAT.GUI();
   
+  gui.add(controls, 'Song', ['City Escape', 'E.G.G.M.A.N.', 'Im Blue', 'Mr Blue Sky']);
   gui.add(controls, 'Load Song');
   gui.add(controls, 'Play/Pause');
   gui.add(controls, 'Volume', 0, 100).step(1);
@@ -151,7 +161,11 @@ function main() {
     
     let prog: ShaderProgram = beatmap;
 
-    generator.generateBeat();
+    let currT = new Date().getTime();
+    let deltaT = (currT - starttime) / 1000;
+    starttime = currT;
+
+    generator.generateBeat(deltaT);
     currBeats = generator.getBeats();
 
     renderer.render(camera, prog, [

@@ -22,16 +22,23 @@ out vec4 out_Col; // This is the final output color that you will see on your
 void main()
 {
     // Material base color (before shading)
-        float dist = 1200.f;
-        for (int i = 0; i < 50; i++) {
-            if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)
-                float thisdist = distance(vec2(u_Beats[i]), fs_UV);
-                dist = min(dist, thisdist);
+    vec4 col = vec4(0.2, 0.2, 0.2, 1);
+    for (int i = 0; i < 50; i++) {
+        if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)
+            float thisdist = distance(vec2(u_Beats[i]), fs_UV);
+            float ringdist = 30.f + u_Beats[i].z * 30.f;
+            if (abs(thisdist - ringdist) <= 3.f) {
+                col = vec4(0.2, 0.2, 0.8, 1);
+                break;
+            }
+            else if (thisdist <= 30.f) {
+                col = vec4(0.8, 0.2, 0.2, 1);
+                break;
             }
         }
-        vec4 col = step(20.f, dist) * vec4(0.2, 0.2, 0.2, 1) + step(dist, 20.f) * vec4(0.8, 0.2, 0.2, 1);
+    }
 
-        // Compute final shaded color
-        out_Col = col;
-        //out_Col = vec4(fs_UV, 0, 1);
+    // Compute final shaded color
+    out_Col = col;
+    //out_Col = vec4(fs_UV, 0, 1);
 }
