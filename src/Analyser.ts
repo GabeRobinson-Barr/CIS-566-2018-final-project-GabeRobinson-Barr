@@ -78,7 +78,7 @@ class Analyser {
         }
 
         let pitch = this.getNote();
-        if (pitch == -1 || this.restTime <= 0.02) { // Update the time since the last note
+        if (pitch == -1 || this.restTime <= 0.2) { // Update the time since the last note
             this.restTime += deltaT;
             //console.log(this.restTime);
             //console.log(deltaT);
@@ -95,7 +95,7 @@ class Analyser {
                     newbeats.push(vec3.fromValues(lastbeat[0], lastbeat[1], 6));
                 }
             }
-            else  if (this.restTime >= this.beatFreq) { // different tones
+            else { // different tones
                 let newbeat: vec3;
                 if (this.restTime >= 0.75 || this.beats.length == 0) {
                     newbeat = vec3.fromValues(Math.random() * this.dims[0], Math.random() * this.dims[1], 6);
