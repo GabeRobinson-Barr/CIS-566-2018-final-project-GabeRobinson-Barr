@@ -7,35 +7,43 @@ import Camera from './Camera';
 import {setGL} from './globals';
 import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 import {Audio} from 'three';
+import Analyser from './Analyser';
 
 // Define an object with application parameters and button callbacks
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   'Load Song': loadScene, // A function pointer, essentially
   'Play/Pause': PlayPause,
+  'Volume': 50,
 };
 
 let audioCtx: AudioContext;
 let audioSrc: AudioBufferSourceNode;
 let audioBuf: AudioBuffer;
+let analyser: AnalyserNode;
+let gain: GainNode;
+
+let generator: Analyser;
 
 let playing: boolean = false;
 let started: boolean = false;
+let lastVol = 50;
 
 let square: Square;
 let beats: vec3[];
-let currBeats: number[] = [600, 200, 2];
+let currBeats: number[];
 
 function loadScene() {
+  playing = false;
+  started = false;
   let dims = vec2.fromValues(document.documentElement.clientWidth, document.documentElement.clientHeight);
-  console.log(dims);
   square = new Square(dims);
   square.create();
 
-  currBeats = [600, 200, 2];
-
   audioCtx = new AudioContext();
   audioSrc = audioCtx.createBufferSource();
+  gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
 
   let request = new XMLHttpRequest();
   request.open('GET', '../../Audio/City Escape.mp3', true);
@@ -50,9 +58,22 @@ function loadScene() {
 
   }
   request.send();
-
   audioSrc.buffer = audioBuf;
-  audioSrc.connect(audioCtx.destination);
+  
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  // Set up node network
+  audioSrc.connect(analyser);
+  analyser.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  generator = new Analyser(analyser, dims);
+  generator.generateBeat();
+  currBeats = generator.getBeats()
+  //console.log(currBeats);
+  //audioSrc.playbackRate.value = 0.5;
+
 }
 
 function PlayPause() {
@@ -72,6 +93,7 @@ function PlayPause() {
     }
   }
   console.log(playing);
+  console.log(currBeats);
 }
 
 function main() {
@@ -89,6 +111,7 @@ function main() {
   
   gui.add(controls, 'Load Song');
   gui.add(controls, 'Play/Pause');
+  gui.add(controls, 'Volume', 0, 100).step(1);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -117,6 +140,10 @@ function main() {
 
   // This function will be called every frame
   function tick() {
+    if (lastVol != controls.Volume) {
+      gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
+      lastVol = controls.Volume;
+    }
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -124,10 +151,11 @@ function main() {
     
     let prog: ShaderProgram = beatmap;
 
+    generator.generateBeat();
+    currBeats = generator.getBeats();
+
     renderer.render(camera, prog, [
-      //icosphere,
       square,
-      //cube,
     ], currBeats);
     stats.end();
 
