@@ -88,7 +88,7 @@ function loadScene() {
   generator.generateBeat(0);
   currBeats = generator.getBeats()
 
-  audioSrc.playbackRate.value = 0.5;
+  //audioSrc.playbackRate.value = 0.25;
 }
 
 
@@ -159,6 +159,9 @@ function main() {
 
   // This function will be called every frame
   function tick() {
+    if (generator.guidims[0] == 0 && generator.guidims[0] == 0) { // Initialize guidims
+      generator.guidims = vec2.fromValues(gui.domElement.offsetWidth, gui.domElement.offsetHeight);
+    }
     if (lastVol != controls.Volume) {
       gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
       lastVol = controls.Volume;
@@ -208,7 +211,9 @@ function main() {
       let y = ev.clientY;
 
       if (x < gui.domElement.offsetLeft && y > (gui.domElement.offsetTop + gui.domElement.offsetHeight)) {
-        generator.updateScore(vec2.fromValues(x, window.innerHeight - y));
+        if (generator.beats[0][0] != -1) {
+          generator.updateScore(vec2.fromValues(x, window.innerHeight - y));
+        }
       }
       
     }
