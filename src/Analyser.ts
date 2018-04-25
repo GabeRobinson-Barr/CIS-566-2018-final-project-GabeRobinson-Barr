@@ -110,6 +110,12 @@ class Analyser {
                 if (this.restTime >= 1.5) { // Repeated tone after long pause can start be anywhere
                     let lastbeat = this.beats[this.beats.length - 1];
                     newbeats.push(vec3.fromValues(Math.random() * this.dims[0], Math.random() * this.dims[1], 6));
+                    newTone = true;
+                }
+                else if (this.beatTime >= 1.5) {
+                    let lastbeat = this.beats[this.beats.length - 1];
+                    newbeats.push(vec3.fromValues(lastbeat[0] + (Math.random() - 0.5) * 200, lastbeat[1] + (Math.random() - 0.5) * 200, 6 + deltaT));
+                    newTone = true;
                 }
                 else { // If this beat has gone on for less than 1.5 sec
                     this.beatTime += deltaT;
@@ -157,20 +163,25 @@ class Analyser {
                 else { // generate a slide
                     //let slidebeat = vec3.fromValues(-1, 1, lastbeat[2]);
                     let slidebeat = vec3.fromValues(-1, Math.floor(Math.pow(Math.random(), 2) * 2), lastbeat[2]); // X = -1 indicates this should be a slide, Y determines what type/shape
-                    lastbeat[0] = Math.min(this.dims[0] - 300, Math.max(300, lastbeat[0])); // Make sure the slide is on the screen
-                    lastbeat[1] = Math.min(this.dims[1] - 300, Math.max(300, lastbeat[1]));
+                    let slidelen = 30 * (this.beatTime / 0.4);
+                    console.log(slidebeat);
+                    console.log(slidelen);
+                    lastbeat[0] = Math.min(this.dims[0] - (200 + slidelen), Math.max(200 + slidelen, lastbeat[0])); // Make sure the slide is on the screen
+                    lastbeat[1] = Math.min(this.dims[1] - (200 + slidelen), Math.max(200 + slidelen, lastbeat[1]));
                     let guidistx = (this.dims[0] - this.guidims[0]) - lastbeat[0];
                     let guidisty = (this.dims[1] - this.guidims[1]) - lastbeat[1];
-                    if (guidistx <= 300 && guidisty <= 300) { // Make sure slide isnt behind the gui
+                    console.log(lastbeat);
+                    if (guidistx <= (100 + slidelen) && guidisty <= (100 + slidelen)) { // Make sure slide isnt behind the gui
                         if (guidistx > guidisty) {
-                            lastbeat[0] -= Math.min(Math.abs(2 * guidistx) + 300, 450);
+                            lastbeat[0] -= (100 + slidelen);
                         }
                         else {
-                            lastbeat[1] -= Math.min(Math.abs(2 * guidisty) + 100, 450);
+                            lastbeat[1] -= (100 + slidelen);
                         }
+                        console.log(lastbeat);
                     }
 
-                    lastbeat[2] += this.beatTime; // Update the slide's ending time
+                    lastbeat[2] += this.beatTime - deltaT; // Update the slide's ending time
                     if (pitch != -1) { // If we already generated a beat this update
                         let beatholder = newbeats.pop(); // pop the generated beat off the top
                         newbeats[newbeats.length - 1] = slidebeat; // Replace lastbeat with the slidebeat

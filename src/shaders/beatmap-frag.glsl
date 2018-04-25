@@ -34,7 +34,7 @@ int slideCol(vec3 startvec, vec3 endvec, vec2 uv) {
         }
     }
 
-    float slidelen = 90.f * ((endvec.z - startvec.z) / 0.4f); // Every 0.4 seconds of slide adds one ball length
+    float slidelen = 30.f * ((endvec.z - startvec.z) / 0.4f); // Every 0.4 seconds of slide adds one ball length
     float xdist = clamp((uv.x - endvec.x) / slidelen, 0.f, 1.f);
 
     if (startvec.y == 0.f) {

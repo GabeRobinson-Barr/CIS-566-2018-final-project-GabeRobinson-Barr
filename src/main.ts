@@ -13,6 +13,8 @@ import Analyser from './Analyser';
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
   'Song': 'City Escape',
+  'GetSongLocation': updateSongLocation,
+  'SongLocation': '../../Audio/City Escape.mp3',
   'Load Song': loadScene, // A function pointer, essentially
   'Play/Pause': PlayPause,
   'Volume': 50,
@@ -42,13 +44,14 @@ let currBeats: number[];
 function loadScene() {
   if (started) {
     audioSrc.stop();
+    audioCtx.close();
   }
 
   controls.Score = 0;
 
   playing = false;
   started = false;
-  let dims = vec2.fromValues(document.documentElement.clientWidth, document.documentElement.clientHeight);
+  let dims = vec2.fromValues(window.innerWidth, window.innerHeight);
   square = new Square(dims);
   square.create();
 
@@ -58,7 +61,7 @@ function loadScene() {
   gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
 
   let request = new XMLHttpRequest();
-  request.open('GET', '../../Audio/' + controls.Song + '.mp3');
+  request.open('GET', controls.SongLocation);
   request.responseType = 'arraybuffer';
 
   request.onload = function() {
@@ -93,6 +96,10 @@ function loadScene() {
   currBeats = generator.getBeats()
 
   //audioSrc.playbackRate.value = 0.25;
+}
+
+function updateSongLocation() {
+  controls.SongLocation = '../../Audio/' + controls.Song + '.mp3';
 }
 
 
@@ -130,6 +137,8 @@ function main() {
   const gui = new DAT.GUI();
   
   gui.add(controls, 'Song', ['City Escape', 'Unknown from M.E.', 'E.G.G.M.A.N.', 'Im Blue', 'Mr Blue Sky']);
+  gui.add(controls, 'GetSongLocation');
+  gui.add(controls, 'SongLocation').listen();
   gui.add(controls, 'Load Song');
   gui.add(controls, 'Play/Pause');
   gui.add(controls, 'Volume', 0, 100).step(1);
@@ -220,7 +229,7 @@ function main() {
           generator.updateScore(vec2.fromValues(x, window.innerHeight - y));
         }
         else {
-
+          // Never figured out how to score slides properly (they rarely show up anyway due to the way the algorithm interprets tones)
         }
       }
       
