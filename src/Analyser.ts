@@ -8,6 +8,7 @@ class Analyser {
     lastTone: number = -1;
     restTime: number = 100;
     beatFreq: number = 0.25; // Makeshift Difficulty
+    score: number = 0;
 
     constructor(node: AnalyserNode, canvasDim: vec2) {
         this.analyser = node;
@@ -71,17 +72,18 @@ class Analyser {
         let newbeats: vec3[] = [];
         for (let i = 0; i < this.beats.length; i++) { // Update beats and remove expired beats
             let beat = this.beats[i];
-            if (beat[2] > deltaT) {
+            if (beat[2] - deltaT >= -0.2) { // Give a 0.2 grace period for missing beats
                 beat[2] -= deltaT;
                 newbeats.push(beat);
+            }
+            else { // If a beat is expired subtract from the score
+                this.score -= 100;
             }
         }
 
         let pitch = this.getNote();
-        if (pitch == -1 || this.restTime <= 0.2) { // Update the time since the last note
+        if (pitch == -1 || this.restTime <= this.beatFreq) { // Update the time since the last note
             this.restTime += deltaT;
-            //console.log(this.restTime);
-            //console.log(deltaT);
         }
         else {
             let tonediff = Math.abs(pitch - this.lastTone);
@@ -102,17 +104,16 @@ class Analyser {
                 }
                 else {
                     let lastbeat = this.beats[this.beats.length - 1];
-                    newbeat = vec3.fromValues(lastbeat[0] + (Math.random() - 0.5) * 150, lastbeat[1] + (Math.random() - 0.5) * 150, 6);
+                    newbeat = vec3.fromValues(lastbeat[0] + (Math.random() - 0.5) * 200, lastbeat[1] + (Math.random() - 0.5) * 200, 6);
                 }
 
-                newbeat[0] = Math.min(this.dims[0] - 10, Math.max(10, newbeat[0])); // Make sure the beat is on the screen
-                newbeat[1] = Math.min(this.dims[1] - 10, Math.max(10, newbeat[1]));
+                newbeat[0] = Math.min(this.dims[0] - 100, Math.max(100, newbeat[0])); // Make sure the beat is on the screen
+                newbeat[1] = Math.min(this.dims[1] - 100, Math.max(100, newbeat[1]));
                 newbeats.push(newbeat);
             }
 
             this.restTime = 0;
         }
-        //console.log(pitch);
         
         this.lastTone = pitch;
         this.beats = newbeats;
@@ -123,7 +124,7 @@ class Analyser {
 
         for (let i = 0; i < this.beats.length; i++) {
             let beat = this.beats[i];
-            if (beat[2] <= 1) {
+            if (beat[2] >= 0 && beat[2] <= 1) {
                 beatarray.push(beat[0]);
                 beatarray.push(beat[1]);
                 beatarray.push(beat[2]);
@@ -135,6 +136,25 @@ class Analyser {
             beatarray.push(0);
         }
         return beatarray;
+    }
+
+    updateScore(clickpos: vec2) {
+        if (this.beats.length > 0) {
+            let nextbeat = this.beats.shift(); // Remove and return the values for the first beat
+            let nexttime = nextbeat[2];
+
+            let dist = vec2.distance(clickpos, vec2.fromValues(nextbeat[0], nextbeat[1]));
+
+            if (nexttime <= 0.2 && dist <= 30) { // Add score for a good click
+                this.score += 100 * Math.floor(20 * (0.2 - nexttime)) + 100;
+            }
+            else if (dist > 30) { // -100 for a click outside the beat
+                this.score -= 100;
+            }
+            else {
+                this.score -= 300; // -300 for a click out of time
+            }
+        }
     }
 
 };

@@ -26,8 +26,8 @@ void main()
     for (int i = 0; i < 50; i++) {
         if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)
             float thisdist = distance(vec2(u_Beats[i]), fs_UV);
-            float ringdist = 30.f + u_Beats[i].z * 30.f;
-            if (abs(thisdist - ringdist) <= 3.f) {
+            float ringdist = 30.f + u_Beats[i].z * 30.f; // Using 30 as the size of a ring
+            if (abs(thisdist - ringdist) <= 1.5f) {
                 col = vec4(0.2, 0.2, 0.8, 1);
                 break;
             }

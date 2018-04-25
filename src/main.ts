@@ -16,6 +16,8 @@ const controls = {
   'Load Song': loadScene, // A function pointer, essentially
   'Play/Pause': PlayPause,
   'Volume': 50,
+  'Difficulty': 5,
+  'Score': 0,
 };
 
 let starttime: number = new Date().getTime();
@@ -40,6 +42,8 @@ function loadScene() {
   if (playing) {
     audioCtx.suspend();
   }
+
+  controls.Score = 0;
 
   playing = false;
   started = false;
@@ -83,6 +87,8 @@ function loadScene() {
   generator = new Analyser(analyser, dims);
   generator.generateBeat(0);
   currBeats = generator.getBeats()
+
+  audioSrc.playbackRate.value = 0.5;
 }
 
 
@@ -115,13 +121,16 @@ function main() {
   stats.domElement.style.top = '0px';
   document.body.appendChild(stats.domElement);
 
+
   // Add controls to the gui
   const gui = new DAT.GUI();
   
-  gui.add(controls, 'Song', ['City Escape', 'E.G.G.M.A.N.', 'Im Blue', 'Mr Blue Sky']);
+  gui.add(controls, 'Song', ['City Escape', 'Unknown from M.E.', 'E.G.G.M.A.N.', 'Im Blue', 'Mr Blue Sky']);
   gui.add(controls, 'Load Song');
   gui.add(controls, 'Play/Pause');
   gui.add(controls, 'Volume', 0, 100).step(1);
+  gui.add(controls, 'Difficulty', 1, 10).step(1);
+  gui.add(controls, 'Score').listen();
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -154,6 +163,9 @@ function main() {
       gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
       lastVol = controls.Volume;
     }
+    generator.beatFreq = 0.55 - (controls.Difficulty * 0.05);
+    controls.Score = generator.score;
+
     camera.update();
     stats.begin();
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
@@ -165,8 +177,10 @@ function main() {
     let deltaT = (currT - starttime) / 1000;
     starttime = currT;
 
-    generator.generateBeat(deltaT);
-    currBeats = generator.getBeats();
+    if (playing) {
+      generator.generateBeat(deltaT);
+      currBeats = generator.getBeats();
+    }
 
     renderer.render(camera, prog, [
       square,
@@ -186,6 +200,21 @@ function main() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   camera.setAspectRatio(window.innerWidth / window.innerHeight);
   camera.updateProjectionMatrix();
+
+  function clicked(ev: MouseEvent) {
+
+    if (playing) {
+      let x = ev.clientX;
+      let y = ev.clientY;
+
+      if (x < gui.domElement.offsetLeft && y > (gui.domElement.offsetTop + gui.domElement.offsetHeight)) {
+        generator.updateScore(vec2.fromValues(x, window.innerHeight - y));
+      }
+      
+    }
+
+  }
+  window.addEventListener('mousedown', clicked);
 
   // Start the render loop
   tick();
