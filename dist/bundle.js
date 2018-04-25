@@ -3306,8 +3306,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__rendering_gl_OpenGLRenderer__ = __webpack_require__(30);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__Camera__ = __webpack_require__(31);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__globals__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__ = __webpack_require__(64);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__Analyser__ = __webpack_require__(65);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__ = __webpack_require__(66);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_8__Analyser__ = __webpack_require__(67);
 
 
 
@@ -3434,8 +3434,8 @@ function main() {
     renderer.setClearColor(0.2, 0.2, 0.2, 1);
     gl.enable(gl.DEPTH_TEST);
     const beatmap = new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["b" /* default */]([
-        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(66)),
-        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(67)),
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.VERTEX_SHADER, __webpack_require__(68)),
+        new __WEBPACK_IMPORTED_MODULE_7__rendering_gl_ShaderProgram__["a" /* Shader */](gl.FRAGMENT_SHADER, __webpack_require__(69)),
     ]);
     // This function will be called every frame
     function tick() {
@@ -12229,6 +12229,7 @@ var createView  = __webpack_require__(35)
 var mouseChange = __webpack_require__(58)
 var mouseWheel  = __webpack_require__(60)
 var mouseOffset = __webpack_require__(63)
+var hasPassive  = __webpack_require__(64)
 
 function createCamera(element, options) {
   element = element || document.body
@@ -12393,15 +12394,23 @@ function createCamera(element, options) {
     var xy = mouseOffset(ev.changedTouches[0], element)
     handleInteraction(0, xy[0], xy[1], lastMods)
     handleInteraction(1, xy[0], xy[1], lastMods)
-  })
+
+    ev.preventDefault()
+  }, hasPassive ? {passive: false} : false)
+
   element.addEventListener('touchmove', function (ev) {
     var xy = mouseOffset(ev.changedTouches[0], element)
     handleInteraction(1, xy[0], xy[1], lastMods)
-  })
+
+    ev.preventDefault()
+  }, hasPassive ? {passive: false} : false)
+
   element.addEventListener('touchend', function (ev) {
     var xy = mouseOffset(ev.changedTouches[0], element)
     handleInteraction(0, lastX, lastY, lastMods)
-  })
+
+    ev.preventDefault()
+  }, hasPassive ? {passive: false} : false)
 
   function handleInteraction (buttons, x, y, mods) {
     var scale = 1.0 / element.clientHeight
@@ -15220,6 +15229,43 @@ function getBoundingClientOffset (element) {
 
 /***/ }),
 /* 64 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var isBrowser = __webpack_require__(65)
+
+function detect() {
+	var supported = false
+
+	try {
+		var opts = Object.defineProperty({}, 'passive', {
+			get: function() {
+				supported = true
+			}
+		})
+
+		window.addEventListener('test', null, opts)
+		window.removeEventListener('test', null, opts)
+	} catch(e) {
+		supported = false
+	}
+
+	return supported
+}
+
+module.exports = isBrowser && detect()
+
+
+/***/ }),
+/* 65 */
+/***/ (function(module, exports) {
+
+module.exports = true;
+
+/***/ }),
+/* 66 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -15365,7 +15411,7 @@ class ShaderProgram {
 
 
 /***/ }),
-/* 65 */
+/* 67 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -15593,13 +15639,13 @@ class Analyser {
 
 
 /***/ }),
-/* 66 */
+/* 68 */
 /***/ (function(module, exports) {
 
 module.exports = "#version 300 es\r\n\r\n//This is a vertex shader. While it is called a \"shader\" due to outdated conventions, this file\r\n//is used to apply matrix transformations to the arrays of vertex data passed to it.\r\n//Since this code is run on your GPU, each vertex is transformed simultaneously.\r\n//If it were run on your CPU, each vertex would have to be processed in a FOR loop, one at a time.\r\n//This simultaneous transformation allows your program to run much faster, especially when rendering\r\n//geometry with millions of vertices.\r\n\r\nuniform mat4 u_Model;       // The matrix that defines the transformation of the\r\n                            // object we're rendering. In this assignment,\r\n                            // this will be the result of traversing your scene graph.\r\n\r\nuniform mat4 u_ModelInvTr;  // The inverse transpose of the model matrix.\r\n                            // This allows us to transform the object's normals properly\r\n                            // if the object has been non-uniformly scaled.\r\n\r\nuniform mat4 u_ViewProj;    // The matrix that defines the camera's transformation.\r\n                            // We've written a static matrix for you to use for HW2,\r\n                            // but in HW3 you'll have to generate one yourself\r\n\r\nin vec4 vs_Pos;             // The array of vertex positions passed to the shader\r\n\r\nin vec2 vs_UV;\r\n\r\nout vec2 fs_UV;\r\nout vec4 fs_Pos;\r\n\r\nconst vec4 lightPos = vec4(5, 5, 3, 1); //The position of our virtual light, which is used to compute the shading of\r\n                                        //the geometry in the fragment shader.\r\n\r\nvoid main()\r\n{\r\n    fs_UV = vs_UV;\r\n    fs_Pos = vs_Pos;\r\n\r\n    gl_Position = vs_Pos;// gl_Position is a built-in variable of OpenGL which is\r\n                                             // used to render the final positions of the geometry's vertices\r\n}\r\n"
 
 /***/ }),
-/* 67 */
+/* 69 */
 /***/ (function(module, exports) {
 
 module.exports = "#version 300 es\r\n\r\n// This is a fragment shader. If you've opened this file first, please\r\n// open and read lambert.vert.glsl before reading on.\r\n// Unlike the vertex shader, the fragment shader actually does compute\r\n// the shading of geometry. For every pixel in your program's output\r\n// screen, the fragment shader is run for every bit of geometry that\r\n// particular pixel overlaps. By implicitly interpolating the position\r\n// data passed into the fragment shader by the vertex shader, the fragment shader\r\n// can compute what color to apply to its pixel based on things like vertex\r\n// position, light position, and vertex color.\r\nprecision highp float;\r\n\r\nuniform vec3 u_Beats[50]; // The beats currently on screen in format vec2(position.x, position.y), (time left onscreen)\r\n\r\nin vec2 fs_UV;\r\nin vec4 fs_Pos;\r\n\r\nout vec4 out_Col; // This is the final output color that you will see on your\r\n                  // screen for the pixel that is currently being processed.\r\n\r\nfloat rand(vec2 s) {\r\n    return fract(s.x * sin(s.y * 583.059f) + 3845.159f);\r\n}\r\n\r\n\r\nint slideCol(vec3 startvec, vec3 endvec, vec2 uv) {\r\n\r\n    if (startvec.z > 0.f) {\r\n        float thisdist = distance(vec2(endvec), uv);\r\n        float ringdist = 30.f + startvec.z * 30.f; // Using 30 as the size of a ring\r\n        if (abs(thisdist - ringdist) <= 1.5f) {\r\n            return 2;\r\n        }\r\n    }\r\n\r\n    float slidelen = 90.f * ((endvec.z - startvec.z) / 0.4f); // Every 0.4 seconds of slide adds one ball length\r\n    float xdist = clamp((uv.x - endvec.x) / slidelen, 0.f, 1.f);\r\n\r\n    if (startvec.y == 0.f) {\r\n\r\n        vec2 cent = vec2(endvec.x - slidelen, endvec.y);\r\n        if (startvec.z <= 0.f) {\r\n            float t = 3.1415f * (abs(startvec.z) / (endvec.z - startvec.z)) / 2.f;\r\n            float tx = slidelen * cos(t) + cent.x;\r\n            float ty = slidelen * sin(t) + cent.y;\r\n            if (distance(uv, vec2(tx, ty)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n\r\n        float xdiff = uv.x - cent.x;\r\n        float ydiff = uv.y - cent.y;\r\n        float angle = atan(ydiff/xdiff);\r\n        float ypos = slidelen * sin(angle) + cent.y;\r\n        float xpos = slidelen * cos(angle) + cent.x;\r\n        if (angle < 0.f || angle > (3.1415f / 2.f)) {\r\n            if (distance(uv, vec2(endvec)) <= 30.f) {\r\n                return 1;\r\n            }\r\n            xpos = slidelen * cos(3.1415f / 2.f) + cent.x;\r\n            ypos = slidelen * sin(3.1415f / 2.f) + cent.y;\r\n            if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n                return 1;\r\n            }\r\n        }\r\n\r\n        if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n    if (startvec.y == 1.f) {\r\n\r\n        float ypos = (1.1 * (atan((xdist - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n        if (startvec.z <= 0.f) {\r\n            float t = abs(startvec.z) / (endvec.z - startvec.z);\r\n            float tpos = (1.1 * (atan((t - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n            if (distance(uv, vec2(endvec.x + (t * slidelen), tpos)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n        if (distance(uv, vec2(endvec.x + (xdist * slidelen), ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n\r\n    return 0;\r\n}\r\n\r\nvoid main()\r\n{\r\n    // Material base color (before shading)\r\n    vec3 backcol = vec3(mod(fs_UV.y, 30.0) / 30.f + cos(fs_UV.x / 10.0));\r\n    vec4 col = vec4(backcol, 1);\r\n    vec3 a = vec3(0.75, 0.0, 0.75);\r\n    vec3 b = vec3(0.5, 0.0, 0.5);\r\n    vec3 c = vec3(1.0, 1.0, 1.0);\r\n    vec3 d = vec3(0, 0.33, 0.67);\r\n\r\n    for (int i = 0; i < 50; i++) {\r\n        float test = abs(u_Beats[i].x + 1.f);\r\n\r\n        if(test >= 0.0001) { // Not a slide\r\n            if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)\r\n                float thisdist = distance(vec2(u_Beats[i]), fs_UV);\r\n                float ringdist = 30.f + u_Beats[i].z * 30.f; // Using 30 as the size of a ring\r\n                if (abs(thisdist - ringdist) <= 1.5f) {\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    break; // break the case\r\n                }\r\n                else if (thisdist <= 30.f) {\r\n                    col = vec4(a + b * cos(2.f * 3.1415 * (c * rand(u_Beats[i].xy) + d)) * (u_Beats[i].z * 2.f), 1);\r\n                    break;\r\n                }\r\n            }\r\n        }\r\n\r\n        if(test < 0.0001) {\r\n            int colidx = slideCol(u_Beats[i], u_Beats[i + 1], fs_UV); // Call the function for figuring out slide color\r\n            switch(colidx) {\r\n                case 0 : // No color\r\n                    i++; // Skip the end slide beat\r\n                break;\r\n\r\n                case 1 : // Slide color\r\n                    col = vec4(0.2, 0.8, 0.2, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n\r\n                case 2 : // Active slide, Ball color\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n            }\r\n        }\r\n\r\n    }\r\n\r\n    // Compute final shaded color\r\n    out_Col = col;\r\n    //out_Col = vec4(fs_UV, 0, 1);\r\n}\r\n"
