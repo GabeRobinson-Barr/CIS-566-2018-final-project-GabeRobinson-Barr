@@ -5811,6 +5811,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 // This will be referred to by dat.GUI's functions that add GUI elements.
 const controls = {
     'Song': 'City Escape',
+    'GetSongLocation': updateSongLocation,
+    'SongLocation': '../../Audio/City Escape.mp3',
     'Load Song': loadScene,
     'Play/Pause': PlayPause,
     'Volume': 50,
@@ -5834,11 +5836,12 @@ let currBeats;
 function loadScene() {
     if (started) {
         audioSrc.stop();
+        audioCtx.close();
     }
     controls.Score = 0;
     playing = false;
     started = false;
-    let dims = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(document.documentElement.clientWidth, document.documentElement.clientHeight);
+    let dims = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["b" /* vec2 */].fromValues(window.innerWidth, window.innerHeight);
     square = new __WEBPACK_IMPORTED_MODULE_3__geometry_Square__["a" /* default */](dims);
     square.create();
     audioCtx = new AudioContext();
@@ -5846,7 +5849,7 @@ function loadScene() {
     gain = audioCtx.createGain();
     gain.gain.setValueAtTime(controls.Volume / 100, audioCtx.currentTime);
     let request = new XMLHttpRequest();
-    request.open('GET', '../../Audio/' + controls.Song + '.mp3');
+    request.open('GET', controls.SongLocation);
     request.responseType = 'arraybuffer';
     request.onload = function () {
         let data = request.response;
@@ -5872,6 +5875,9 @@ function loadScene() {
     generator.generateBeat(0);
     currBeats = generator.getBeats();
     //audioSrc.playbackRate.value = 0.25;
+}
+function updateSongLocation() {
+    controls.SongLocation = '../../Audio/' + controls.Song + '.mp3';
 }
 function PlayPause() {
     if (!started) {
@@ -5902,6 +5908,8 @@ function main() {
     // Add controls to the gui
     const gui = new __WEBPACK_IMPORTED_MODULE_2_dat_gui__["GUI"]();
     gui.add(controls, 'Song', ['City Escape', 'Unknown from M.E.', 'E.G.G.M.A.N.', 'Im Blue', 'Mr Blue Sky']);
+    gui.add(controls, 'GetSongLocation');
+    gui.add(controls, 'SongLocation').listen();
     gui.add(controls, 'Load Song');
     gui.add(controls, 'Play/Pause');
     gui.add(controls, 'Volume', 0, 100).step(1);
@@ -16494,6 +16502,12 @@ class Analyser {
                 if (this.restTime >= 1.5) { // Repeated tone after long pause can start be anywhere
                     let lastbeat = this.beats[this.beats.length - 1];
                     newbeats.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(Math.random() * this.dims[0], Math.random() * this.dims[1], 6));
+                    newTone = true;
+                }
+                else if (this.beatTime >= 1.5) {
+                    let lastbeat = this.beats[this.beats.length - 1];
+                    newbeats.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(lastbeat[0] + (Math.random() - 0.5) * 200, lastbeat[1] + (Math.random() - 0.5) * 200, 6 + deltaT));
+                    newTone = true;
                 }
                 else { // If this beat has gone on for less than 1.5 sec
                     this.beatTime += deltaT;
@@ -16537,19 +16551,24 @@ class Analyser {
                 else { // generate a slide
                     //let slidebeat = vec3.fromValues(-1, 1, lastbeat[2]);
                     let slidebeat = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["c" /* vec3 */].fromValues(-1, Math.floor(Math.pow(Math.random(), 2) * 2), lastbeat[2]); // X = -1 indicates this should be a slide, Y determines what type/shape
-                    lastbeat[0] = Math.min(this.dims[0] - 300, Math.max(300, lastbeat[0])); // Make sure the slide is on the screen
-                    lastbeat[1] = Math.min(this.dims[1] - 300, Math.max(300, lastbeat[1]));
+                    let slidelen = 30 * (this.beatTime / 0.4);
+                    console.log(slidebeat);
+                    console.log(slidelen);
+                    lastbeat[0] = Math.min(this.dims[0] - (200 + slidelen), Math.max(200 + slidelen, lastbeat[0])); // Make sure the slide is on the screen
+                    lastbeat[1] = Math.min(this.dims[1] - (200 + slidelen), Math.max(200 + slidelen, lastbeat[1]));
                     let guidistx = (this.dims[0] - this.guidims[0]) - lastbeat[0];
                     let guidisty = (this.dims[1] - this.guidims[1]) - lastbeat[1];
-                    if (guidistx <= 300 && guidisty <= 300) { // Make sure slide isnt behind the gui
+                    console.log(lastbeat);
+                    if (guidistx <= (100 + slidelen) && guidisty <= (100 + slidelen)) { // Make sure slide isnt behind the gui
                         if (guidistx > guidisty) {
-                            lastbeat[0] -= Math.min(Math.abs(2 * guidistx) + 300, 450);
+                            lastbeat[0] -= (100 + slidelen);
                         }
                         else {
-                            lastbeat[1] -= Math.min(Math.abs(2 * guidisty) + 100, 450);
+                            lastbeat[1] -= (100 + slidelen);
                         }
+                        console.log(lastbeat);
                     }
-                    lastbeat[2] += this.beatTime; // Update the slide's ending time
+                    lastbeat[2] += this.beatTime - deltaT; // Update the slide's ending time
                     if (pitch != -1) { // If we already generated a beat this update
                         let beatholder = newbeats.pop(); // pop the generated beat off the top
                         newbeats[newbeats.length - 1] = slidebeat; // Replace lastbeat with the slidebeat
@@ -16627,7 +16646,7 @@ module.exports = "#version 300 es\r\n\r\n//This is a vertex shader. While it is 
 /* 70 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\n\r\n// This is a fragment shader. If you've opened this file first, please\r\n// open and read lambert.vert.glsl before reading on.\r\n// Unlike the vertex shader, the fragment shader actually does compute\r\n// the shading of geometry. For every pixel in your program's output\r\n// screen, the fragment shader is run for every bit of geometry that\r\n// particular pixel overlaps. By implicitly interpolating the position\r\n// data passed into the fragment shader by the vertex shader, the fragment shader\r\n// can compute what color to apply to its pixel based on things like vertex\r\n// position, light position, and vertex color.\r\nprecision highp float;\r\n\r\nuniform vec3 u_Beats[50]; // The beats currently on screen in format vec2(position.x, position.y), (time left onscreen)\r\n\r\nin vec2 fs_UV;\r\nin vec4 fs_Pos;\r\n\r\nout vec4 out_Col; // This is the final output color that you will see on your\r\n                  // screen for the pixel that is currently being processed.\r\n\r\nfloat rand(vec2 s) {\r\n    return fract(s.x * sin(s.y * 583.059f) + 3845.159f);\r\n}\r\n\r\n\r\nint slideCol(vec3 startvec, vec3 endvec, vec2 uv) {\r\n\r\n    if (startvec.z > 0.f) {\r\n        float thisdist = distance(vec2(endvec), uv);\r\n        float ringdist = 30.f + startvec.z * 30.f; // Using 30 as the size of a ring\r\n        if (abs(thisdist - ringdist) <= 1.5f) {\r\n            return 2;\r\n        }\r\n    }\r\n\r\n    float slidelen = 90.f * ((endvec.z - startvec.z) / 0.4f); // Every 0.4 seconds of slide adds one ball length\r\n    float xdist = clamp((uv.x - endvec.x) / slidelen, 0.f, 1.f);\r\n\r\n    if (startvec.y == 0.f) {\r\n\r\n        vec2 cent = vec2(endvec.x - slidelen, endvec.y);\r\n        if (startvec.z <= 0.f) {\r\n            float t = 3.1415f * (abs(startvec.z) / (endvec.z - startvec.z)) / 2.f;\r\n            float tx = slidelen * cos(t) + cent.x;\r\n            float ty = slidelen * sin(t) + cent.y;\r\n            if (distance(uv, vec2(tx, ty)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n\r\n        float xdiff = uv.x - cent.x;\r\n        float ydiff = uv.y - cent.y;\r\n        float angle = atan(ydiff/xdiff);\r\n        float ypos = slidelen * sin(angle) + cent.y;\r\n        float xpos = slidelen * cos(angle) + cent.x;\r\n        if (angle < 0.f || angle > (3.1415f / 2.f)) {\r\n            if (distance(uv, vec2(endvec)) <= 30.f) {\r\n                return 1;\r\n            }\r\n            xpos = slidelen * cos(3.1415f / 2.f) + cent.x;\r\n            ypos = slidelen * sin(3.1415f / 2.f) + cent.y;\r\n            if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n                return 1;\r\n            }\r\n        }\r\n\r\n        if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n    if (startvec.y == 1.f) {\r\n\r\n        float ypos = (1.1 * (atan((xdist - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n        if (startvec.z <= 0.f) {\r\n            float t = abs(startvec.z) / (endvec.z - startvec.z);\r\n            float tpos = (1.1 * (atan((t - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n            if (distance(uv, vec2(endvec.x + (t * slidelen), tpos)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n        if (distance(uv, vec2(endvec.x + (xdist * slidelen), ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n\r\n    return 0;\r\n}\r\n\r\nvoid main()\r\n{\r\n    // Material base color (before shading)\r\n    vec3 backcol = vec3(mod(fs_UV.y, 30.0) / 30.f + cos(fs_UV.x / 10.0));\r\n    vec4 col = vec4(backcol, 1);\r\n    vec3 a = vec3(0.75, 0.0, 0.75);\r\n    vec3 b = vec3(0.5, 0.0, 0.5);\r\n    vec3 c = vec3(1.0, 1.0, 1.0);\r\n    vec3 d = vec3(0, 0.33, 0.67);\r\n\r\n    for (int i = 0; i < 50; i++) {\r\n        float test = abs(u_Beats[i].x + 1.f);\r\n\r\n        if(test >= 0.0001) { // Not a slide\r\n            if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)\r\n                float thisdist = distance(vec2(u_Beats[i]), fs_UV);\r\n                float ringdist = 30.f + u_Beats[i].z * 30.f; // Using 30 as the size of a ring\r\n                if (abs(thisdist - ringdist) <= 1.5f) {\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    break; // break the case\r\n                }\r\n                else if (thisdist <= 30.f) {\r\n                    col = vec4(a + b * cos(2.f * 3.1415 * (c * rand(u_Beats[i].xy) + d)) * (u_Beats[i].z * 2.f), 1);\r\n                    break;\r\n                }\r\n            }\r\n        }\r\n\r\n        if(test < 0.0001) {\r\n            int colidx = slideCol(u_Beats[i], u_Beats[i + 1], fs_UV); // Call the function for figuring out slide color\r\n            switch(colidx) {\r\n                case 0 : // No color\r\n                    i++; // Skip the end slide beat\r\n                break;\r\n\r\n                case 1 : // Slide color\r\n                    col = vec4(0.2, 0.8, 0.2, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n\r\n                case 2 : // Active slide, Ball color\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n            }\r\n        }\r\n\r\n    }\r\n\r\n    // Compute final shaded color\r\n    out_Col = col;\r\n    //out_Col = vec4(fs_UV, 0, 1);\r\n}\r\n"
+module.exports = "#version 300 es\r\n\r\n// This is a fragment shader. If you've opened this file first, please\r\n// open and read lambert.vert.glsl before reading on.\r\n// Unlike the vertex shader, the fragment shader actually does compute\r\n// the shading of geometry. For every pixel in your program's output\r\n// screen, the fragment shader is run for every bit of geometry that\r\n// particular pixel overlaps. By implicitly interpolating the position\r\n// data passed into the fragment shader by the vertex shader, the fragment shader\r\n// can compute what color to apply to its pixel based on things like vertex\r\n// position, light position, and vertex color.\r\nprecision highp float;\r\n\r\nuniform vec3 u_Beats[50]; // The beats currently on screen in format vec2(position.x, position.y), (time left onscreen)\r\n\r\nin vec2 fs_UV;\r\nin vec4 fs_Pos;\r\n\r\nout vec4 out_Col; // This is the final output color that you will see on your\r\n                  // screen for the pixel that is currently being processed.\r\n\r\nfloat rand(vec2 s) {\r\n    return fract(s.x * sin(s.y * 583.059f) + 3845.159f);\r\n}\r\n\r\n\r\nint slideCol(vec3 startvec, vec3 endvec, vec2 uv) {\r\n\r\n    if (startvec.z > 0.f) {\r\n        float thisdist = distance(vec2(endvec), uv);\r\n        float ringdist = 30.f + startvec.z * 30.f; // Using 30 as the size of a ring\r\n        if (abs(thisdist - ringdist) <= 1.5f) {\r\n            return 2;\r\n        }\r\n    }\r\n\r\n    float slidelen = 30.f * ((endvec.z - startvec.z) / 0.4f); // Every 0.4 seconds of slide adds one ball length\r\n    float xdist = clamp((uv.x - endvec.x) / slidelen, 0.f, 1.f);\r\n\r\n    if (startvec.y == 0.f) {\r\n\r\n        vec2 cent = vec2(endvec.x - slidelen, endvec.y);\r\n        if (startvec.z <= 0.f) {\r\n            float t = 3.1415f * (abs(startvec.z) / (endvec.z - startvec.z)) / 2.f;\r\n            float tx = slidelen * cos(t) + cent.x;\r\n            float ty = slidelen * sin(t) + cent.y;\r\n            if (distance(uv, vec2(tx, ty)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n\r\n        float xdiff = uv.x - cent.x;\r\n        float ydiff = uv.y - cent.y;\r\n        float angle = atan(ydiff/xdiff);\r\n        float ypos = slidelen * sin(angle) + cent.y;\r\n        float xpos = slidelen * cos(angle) + cent.x;\r\n        if (angle < 0.f || angle > (3.1415f / 2.f)) {\r\n            if (distance(uv, vec2(endvec)) <= 30.f) {\r\n                return 1;\r\n            }\r\n            xpos = slidelen * cos(3.1415f / 2.f) + cent.x;\r\n            ypos = slidelen * sin(3.1415f / 2.f) + cent.y;\r\n            if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n                return 1;\r\n            }\r\n        }\r\n\r\n        if (distance(uv, vec2(xpos, ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n    if (startvec.y == 1.f) {\r\n\r\n        float ypos = (1.1 * (atan((xdist - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n        if (startvec.z <= 0.f) {\r\n            float t = abs(startvec.z) / (endvec.z - startvec.z);\r\n            float tpos = (1.1 * (atan((t - 0.5f) * 10.f) / 3.1415f) + 0.5) * 30.f + endvec.y;\r\n            if (distance(uv, vec2(endvec.x + (t * slidelen), tpos)) <= 30.f) {\r\n                return 2;\r\n            }\r\n        }\r\n        if (distance(uv, vec2(endvec.x + (xdist * slidelen), ypos)) <= 30.f) {\r\n            return 1;\r\n        }\r\n\r\n        return 0;\r\n    }\r\n\r\n    return 0;\r\n}\r\n\r\nvoid main()\r\n{\r\n    // Material base color (before shading)\r\n    vec3 backcol = vec3(mod(fs_UV.y, 30.0) / 30.f + cos(fs_UV.x / 10.0));\r\n    vec4 col = vec4(backcol, 1);\r\n    vec3 a = vec3(0.75, 0.0, 0.75);\r\n    vec3 b = vec3(0.5, 0.0, 0.5);\r\n    vec3 c = vec3(1.0, 1.0, 1.0);\r\n    vec3 d = vec3(0, 0.33, 0.67);\r\n\r\n    for (int i = 0; i < 50; i++) {\r\n        float test = abs(u_Beats[i].x + 1.f);\r\n\r\n        if(test >= 0.0001) { // Not a slide\r\n            if (u_Beats[i].z > 0.0001) { // If there is time left on the beat (eliminates empty beats)\r\n                float thisdist = distance(vec2(u_Beats[i]), fs_UV);\r\n                float ringdist = 30.f + u_Beats[i].z * 30.f; // Using 30 as the size of a ring\r\n                if (abs(thisdist - ringdist) <= 1.5f) {\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    break; // break the case\r\n                }\r\n                else if (thisdist <= 30.f) {\r\n                    col = vec4(a + b * cos(2.f * 3.1415 * (c * rand(u_Beats[i].xy) + d)) * (u_Beats[i].z * 2.f), 1);\r\n                    break;\r\n                }\r\n            }\r\n        }\r\n\r\n        if(test < 0.0001) {\r\n            int colidx = slideCol(u_Beats[i], u_Beats[i + 1], fs_UV); // Call the function for figuring out slide color\r\n            switch(colidx) {\r\n                case 0 : // No color\r\n                    i++; // Skip the end slide beat\r\n                break;\r\n\r\n                case 1 : // Slide color\r\n                    col = vec4(0.2, 0.8, 0.2, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n\r\n                case 2 : // Active slide, Ball color\r\n                    col = vec4(0.2, 0.2, 0.8, 1);\r\n                    i = 50; // Break the while loop\r\n                break;\r\n            }\r\n        }\r\n\r\n    }\r\n\r\n    // Compute final shaded color\r\n    out_Col = col;\r\n    //out_Col = vec4(fs_UV, 0, 1);\r\n}\r\n"
 
 /***/ })
 /******/ ]);
