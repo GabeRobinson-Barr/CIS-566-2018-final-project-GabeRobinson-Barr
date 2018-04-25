@@ -11,6 +11,7 @@ class Analyser {
     score: number = 0;
     guidims: vec2 = vec2.fromValues(0,0); // Size of the gui in the corner so we dont generate beats under it
     beatTime: number = 0; // Length of this note
+    timebuffer: number = 0.2; // Time you get before or after clicking a note that still counts
 
     constructor(node: AnalyserNode, canvasDim: vec2) {
         this.analyser = node;
@@ -76,7 +77,7 @@ class Analyser {
             let beat = this.beats[i];
             if (beat[0] == -1) { // If this beat is the start of a slide check if the end is stil live
                 let endslide = this.beats[i + 1];
-                if (endslide[2] - deltaT >= 0.2) { // If the end of the slide is still live
+                if (endslide[2] - deltaT >= -this.timebuffer) { // If the end of the slide is still live
                     beat[2] -= deltaT;
                     endslide[2] -= deltaT;
                     newbeats.push(beat); // Update both parts of the slide
@@ -84,7 +85,7 @@ class Analyser {
                     i++;
                 }
             }
-            else if (beat[2] - deltaT >= -0.2) { // Give a 0.2 grace period for missing beats
+            else if (beat[2] - deltaT >= -this.timebuffer) { // Give a 0.2 grace period for missing beats
                 beat[2] -= deltaT;
                 newbeats.push(beat);
             }
@@ -220,19 +221,21 @@ class Analyser {
 
     updateScore(clickpos: vec2) { // This function handles updating the score for NON SLIDES ONLY
         if (this.beats.length > 0) {
-            let nextbeat = this.beats.shift(); // Remove and return the values for the first beat
-            let nexttime = nextbeat[2];
+            if (this.beats[0][2] < 1) { // Cant misclick beats that are not on the screen yet
+                let nextbeat = this.beats.shift(); // Remove and return the values for the first beat
+                let nexttime = nextbeat[2];
 
-            let dist = vec2.distance(clickpos, vec2.fromValues(nextbeat[0], nextbeat[1]));
+                let dist = vec2.distance(clickpos, vec2.fromValues(nextbeat[0], nextbeat[1]));
 
-            if (nexttime <= 0.2 && dist <= 30) { // Add score for a good click
-                this.score += 100 * Math.floor(20 * (0.2 - nexttime)) + 100;
-            }
-            else if (dist > 30) { // -100 for a click outside the beat
-                this.score -= 100;
-            }
-            else {
-                this.score -= 300; // -300 for a click out of time
+                if (nexttime <= this.timebuffer && dist <= 30) { // Add score for a good click
+                    this.score += 200 * Math.floor((2 / this.timebuffer) * (this.timebuffer - nexttime)) + 100;
+                }
+                else if (dist > 30 && dist <= 60) { // -300 for a click outside the beat
+                    this.score -= 300;
+                }
+                else {
+                    this.score -= 500; // -500 for a click out of time or a bad misclick
+                }
             }
         }
     }

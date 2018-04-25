@@ -17,6 +17,7 @@ const controls = {
   'Play/Pause': PlayPause,
   'Volume': 50,
   'Difficulty': 5,
+  'BufferTime': 0.2,
   'Score': 0,
 };
 
@@ -39,8 +40,8 @@ let square: Square;
 let currBeats: number[];
 
 function loadScene() {
-  if (playing) {
-    audioCtx.suspend();
+  if (started) {
+    audioSrc.stop();
   }
 
   controls.Score = 0;
@@ -58,19 +59,22 @@ function loadScene() {
 
   let request = new XMLHttpRequest();
   request.open('GET', '../../Audio/' + controls.Song + '.mp3');
-  console.log(controls.Song);
   request.responseType = 'arraybuffer';
 
   request.onload = function() {
     let data = request.response;
     audioCtx.decodeAudioData(data, function(buffer) {
       audioBuf = buffer;
+      audioSrc.buffer = audioBuf;
+      console.log("Loaded");
     },
     function(e) {console.log("Error decoding audio data"); });
 
   }
+
   request.send();
-  audioSrc.buffer = audioBuf;
+  //console.log(controls.Song);
+  //audioSrc.buffer = audioBuf;
   
   analyser = audioCtx.createAnalyser();
   analyser.fftSize = 256;
@@ -130,6 +134,7 @@ function main() {
   gui.add(controls, 'Play/Pause');
   gui.add(controls, 'Volume', 0, 100).step(1);
   gui.add(controls, 'Difficulty', 1, 10).step(1);
+  gui.add(controls, 'BufferTime', 0.01, 0.5).step(0.01);
   gui.add(controls, 'Score').listen();
 
   // get canvas and webgl context
@@ -213,6 +218,9 @@ function main() {
       if (x < gui.domElement.offsetLeft && y > (gui.domElement.offsetTop + gui.domElement.offsetHeight)) {
         if (generator.beats[0][0] != -1) {
           generator.updateScore(vec2.fromValues(x, window.innerHeight - y));
+        }
+        else {
+
         }
       }
       

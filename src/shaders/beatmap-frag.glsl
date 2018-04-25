@@ -19,6 +19,10 @@ in vec4 fs_Pos;
 out vec4 out_Col; // This is the final output color that you will see on your
                   // screen for the pixel that is currently being processed.
 
+float rand(vec2 s) {
+    return fract(s.x * sin(s.y * 583.059f) + 3845.159f);
+}
+
 
 int slideCol(vec3 startvec, vec3 endvec, vec2 uv) {
 
@@ -90,7 +94,13 @@ int slideCol(vec3 startvec, vec3 endvec, vec2 uv) {
 void main()
 {
     // Material base color (before shading)
-    vec4 col = vec4(0.2, 0.2, 0.2, 1);
+    vec3 backcol = vec3(mod(fs_UV.y, 30.0) / 30.f + cos(fs_UV.x / 10.0));
+    vec4 col = vec4(backcol, 1);
+    vec3 a = vec3(0.75, 0.0, 0.75);
+    vec3 b = vec3(0.5, 0.0, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0, 0.33, 0.67);
+
     for (int i = 0; i < 50; i++) {
         float test = abs(u_Beats[i].x + 1.f);
 
@@ -103,7 +113,7 @@ void main()
                     break; // break the case
                 }
                 else if (thisdist <= 30.f) {
-                    col = vec4(0.8, 0.2, 0.2, 1);
+                    col = vec4(a + b * cos(2.f * 3.1415 * (c * rand(u_Beats[i].xy) + d)) * (u_Beats[i].z * 2.f), 1);
                     break;
                 }
             }
