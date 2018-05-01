@@ -14,7 +14,7 @@ import Analyser from './Analyser';
 const controls = {
   'Song': 'City Escape',
   'GetSongLocation': updateSongLocation,
-  'SongLocation': '../../Audio/City Escape.mp3',
+  'SongLocation': './src/Audio/City Escape.mp3',
   'Load Song': loadScene, // A function pointer, essentially
   'Play/Pause': PlayPause,
   'Volume': 50,
@@ -93,13 +93,13 @@ function loadScene() {
 
   generator = new Analyser(analyser, dims);
   generator.generateBeat(0);
-  currBeats = generator.getBeats()
+  currBeats = generator.getBeats();
 
   //audioSrc.playbackRate.value = 0.25;
 }
 
 function updateSongLocation() {
-  controls.SongLocation = '../../Audio/' + controls.Song + '.mp3';
+  controls.SongLocation = './src/Audio/' + controls.Song + '.mp3';
 }
 
 
